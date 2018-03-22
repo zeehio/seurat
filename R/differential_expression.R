@@ -60,6 +60,7 @@ globalVariables(names = 'avg_logFC', package = 'Seurat', add = TRUE)
 #' should be interpreted cautiously, as the genes used for clustering are the
 #' same genes tested for differential expression.
 #' @import pbapply
+#' @importFrom lmtest lrtest
 #'
 #' @export
 #'
@@ -270,6 +271,17 @@ FindMarkers <- function(
       ...
     )
   }
+  if (test.use == "LR") {
+    to.return <- LRDETest(
+      object = object,
+      assay.type = assay.type,
+      cells.1 = cells.1,
+      cells.2 = cells.2,
+      genes.use = genes.use,
+      print.bar = print.bar,
+      ...
+    )
+  }
     if (test.use == "DESeq2") {
       to.return <- DESeq2DETest(
         object = object,
@@ -411,10 +423,13 @@ FindAllMarkers <- function(
       }
     }
   }
-  if (only.pos) {
+  if ((only.pos) && nrow(gde.all) > 0) {
     return(subset(x = gde.all, subset = avg_logFC > 0))
   }
   rownames(x = gde.all) <- make.unique(names = as.character(x = gde.all$gene))
+  if(nrow(gde.all) == 0) {
+    warning("No DE genes identified.")
+  }
   return(gde.all)
 }
 
@@ -614,7 +629,7 @@ FindAllMarkersNode <- function(
 #' @param grouping.var grouping variable
 #' @param assay.type Type of assay to fetch data for (default is RNA)
 #' @param meta.method method for combining p-values. Should be a function from
-#' the metap package (NOTE: pass the function, not a string)
+#' the metap package (NOTE: pass the function, not a string).
 #' @param \dots parameters to pass to FindMarkers
 #'
 #' @return Matrix containing a ranked list of putative conserved markers, and
@@ -635,7 +650,6 @@ FindAllMarkersNode <- function(
 #'   replace = TRUE
 #' )
 #' FindConservedMarkers(pbmc_small, ident.1 = 0, ident.2 = 1, grouping.var = "groups")
-#' }
 #'
 FindConservedMarkers <- function(
   object,
@@ -719,12 +733,10 @@ FindConservedMarkers <- function(
     MARGIN = 1,
     FUN = max
   )
-  combined.pval <- data.frame(cp = apply(X = markers.combined[, pval.codes],
-                                         MARGIN = 1,
-                                         FUN = function(x) meta.method(x)$p))
+  combined.pval <- data.frame(cp = apply(X = markers.combined[, pval.codes], MARGIN = 1, FUN = function(x) meta.method(x)$p))
   colnames(combined.pval) <- paste0(as.character(formals()$meta.method), "_p_val")
   markers.combined <- cbind(markers.combined, combined.pval)
-  markers.combined <- markers.combined[order(markers.combined[, paste0(as.character(formals()$meta.method), "_p_val")]), ]
+  markers.combined <- markers.combined[order(markers.combined[,paste0(as.character(formals()$meta.method), "_p_val")]), ]
   return(markers.combined)
 }
 
@@ -1349,6 +1361,42 @@ WilcoxDETest <- function(
     X = 1:nrow(x = countdata.test),
     FUN = function(x) {
       return(wilcox.test(countdata.test[x, ] ~ coldata$group, ...)$p.value)
+    }
+  )
+  genes.return <- rownames(x = countdata.test)
+  to.return <- data.frame(p_val, row.names = genes.return)
+  return(to.return)
+}
+
+
+LRDETest <- function(
+  object,
+  cells.1,
+  cells.2,
+  min.cells = 3,
+  genes.use = NULL,
+  print.bar = TRUE,
+  assay.type = "RNA",
+  ...
+) {
+  data.test <- GetAssayData(object = object, assay.type = assay.type, slot = "data")
+  genes.use <- SetIfNull(x = genes.use, default = rownames(x = data.test))
+  # check that the gene made it through the any filtering that was done
+  genes.use <- genes.use[genes.use %in% rownames(x = data.test)]
+  coldata <- object@meta.data[c(cells.1, cells.2), ]
+  coldata[cells.1, "group"] <- "Group1"
+  coldata[cells.2, "group"] <- "Group2"
+  coldata$group <- factor(x = coldata$group)
+  coldata$wellKey <- rownames(x = coldata)
+  countdata.test <- data.test[genes.use, rownames(x = coldata)]
+  mysapply <- if (print.bar) {pbsapply} else {sapply}
+  p_val <- mysapply(
+    X = 1:nrow(x = countdata.test),
+    FUN = function(x) {
+      model1 <- glm(coldata$group ~ countdata.test[x,],family = "binomial")
+      model2 <- glm(coldata$group ~ 1, family = "binomial")
+      lrtest <- lrtest(model1, model2)
+      return(lrtest$Pr[2])
     }
   )
   genes.return <- rownames(x = countdata.test)

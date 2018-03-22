@@ -170,6 +170,7 @@ map.cell.score <- function(gene, gene.value, insitu.bin, mu, sigma, alpha) {
 
 #Internal, not documented for now
 #
+#
 MapCell <- function(
   object,
   cell.name,
@@ -246,8 +247,9 @@ MapCell <- function(
                   Rowv = NA,
                   Colv = NA,
                   col = BlackAndWhite(),
-                  trace = "none"
+                  trace = "none",
     )
+
     heatmap2NoKey(x = scale.probs,
                   Rowv = NA,
                   Colv = NA,
