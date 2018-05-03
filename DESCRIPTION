@@ -16,7 +16,7 @@ URL: http://www.satijalab.org/seurat, https://github.com/satijalab/seurat
 BugReports: https://github.com/satijalab/seurat/issues
 Additional_repositories: https://mojaveazure.github.io/loomR
 Depends:
-    R (>= 3.4.1),
+    R (>= 3.4.0),
     ggplot2,
     cowplot,
     Matrix (>= 1.2.14),
