@@ -4,8 +4,9 @@ language: R
 sudo: required
 cache: packages
 
-apt_packages:
-  - libhdf5-7
+env:
+  global:
+    - _R_CHECK_FORCE_SUGGESTS_=FALSE
 
 bioc_packages:
   - GenomeInfoDbData
@@ -19,3 +20,4 @@ r_github_packages:
   - mojaveazure/loomR  
 
 warnings_are_errors: false
+
