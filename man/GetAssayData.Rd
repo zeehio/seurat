@@ -21,11 +21,12 @@ Pull information for specified stored dimensional reduction analysis
 }
 \examples{
 # Simulate CITE-Seq results
+data('pbmc_small')
 df <- t(x = data.frame(
   x = round(x = rnorm(n = 80, mean = 20, sd = 2)),
-  y = round(x = rbinom(n = 80, size = 100, prob = 0.2)),
-  row.names = pbmc_small@cell.names
+  y = round(x = rbinom(n = 80, size = 100, prob = 0.2))
 ))
+colnames(x = df) <- pbmc_small@cell.names
 pbmc_small <- SetAssayData(
   object = pbmc_small,
   assay.type = 'CITE',

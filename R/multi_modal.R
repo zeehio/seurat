@@ -52,11 +52,12 @@ setMethod(
 #'
 #' @examples
 #' # Simulate CITE-Seq results
+#' data('pbmc_small')
 #' df <- t(x = data.frame(
 #'   x = round(x = rnorm(n = 80, mean = 20, sd = 2)),
-#'   y = round(x = rbinom(n = 80, size = 100, prob = 0.2)),
-#'   row.names = pbmc_small@cell.names
+#'   y = round(x = rbinom(n = 80, size = 100, prob = 0.2))
 #' ))
+#' colnames(x = df) <- pbmc_small@cell.names
 #' pbmc_small <- SetAssayData(
 #'   object = pbmc_small,
 #'   assay.type = 'CITE',
@@ -93,7 +94,7 @@ GetAssayData <- function(object, assay.type = "RNA", slot = "data") {
     stop(paste(slot, "slot doesn't exist"))
   }
   to.return <- slot(object = object@assay[[assay.type]], name = slot)
-  if(is.null(to.return)){
+  if (is.null(to.return)) {
     stop(paste0("The ", slot, " for the ", assay.type, " assay is empty"))
   }
   if (length(x = object@cell.names) == ncol(x = to.return)) {
@@ -119,12 +120,13 @@ GetAssayData <- function(object, assay.type = "RNA", slot = "data") {
 #' @export
 #'
 #' @examples
+#' data('pbmc_small')
 #' # Simulate CITE-Seq results
 #' df <- t(x = data.frame(
 #'   x = round(x = rnorm(n = 80, mean = 20, sd = 2)),
-#'   y = round(x = rbinom(n = 80, size = 100, prob = 0.2)),
-#'   row.names = pbmc_small@cell.names
+#'   y = round(x = rbinom(n = 80, size = 100, prob = 0.2))
 #' ))
+#' colnames(x = df) <- pbmc_small@cell.names
 #' pbmc_small <- SetAssayData(
 #'   object = pbmc_small,
 #'   assay.type = 'CITE',
@@ -456,7 +458,7 @@ HTODemux <- function(
 #' @param features.2 Features to use for the second assay, default is all the features.
 #' @param num.cc Minimal number of CCs to return.
 #' @param normalize.variance Whether to scale the embeddings. Default is TRUE.
-#' 
+#'
 #' @return Returns Seurat object with two CCA results stored (for example, object@dr$RNACCA and object@dr$ADTCCA).
 #'
 #' @export
@@ -500,7 +502,7 @@ MultiModal_CCA=function(
   #data.2.var=apply(data.2,2,var)
   data.1 <- data.1[,apply(data.1,2,var)>0]
   data.2 <- data.2[,apply(data.2,2,var)>0]
-  
+
   num.cc <- max(20, min(ncol(data.1), ncol(data.2)))
   cca.data <- list(data.1, data.2)
   names(x = cca.data) <- c(assay.1, assay.2)
@@ -563,7 +565,7 @@ MultiModal_CCA=function(
 #' @param num.cells Number of cells to plot. Default is 5000.
 #' @param singlet.names Namings for the singlets. Default is to use the same names as HTOs.
 #' @param ... Additional arguments for DoHeatmap().
-#' 
+#'
 #' @return Returns a ggplot2 plot object.
 #'
 #' @export
@@ -578,29 +580,29 @@ HTOHeatmap <- function(
   object,
   hto.classification = "hto_classification",
   global.classification = "hto_classification_global",
-  assay.type = "HTO", 
-  num.cells = 5000, 
+  assay.type = "HTO",
+  num.cells = 5000,
   singlet.names = NULL,
   ...
 ){
-  
+
   object <- SetAllIdent(object,id = hto.classification)
   objmini <- SubsetData(object,cells.use = sample(object@cell.names,num.cells))
-  
+
   metadata_use <- objmini@meta.data
   singlet_id <- sort(unique(as.character(metadata_use[metadata_use[,global.classification]=="Singlet",hto.classification])))
   doublet_id <- sort(unique(as.character(metadata_use[metadata_use[,global.classification]=="Doublet",hto.classification])))
-  
+
   heatmap_levels <- c(singlet_id,doublet_id,"Negative")
   objmini <- SetIdent(objmini,FastWhichCells(objmini,group.by = global.classification,"Doublet"),"Multiplet")
-  
+
   objmini@ident <- factor(objmini@ident, c(singlet_id,"Multiplet","Negative"))
   cells.ordered=as.character(unlist(sapply(heatmap_levels,function(x) sample(FastWhichCells(objmini,group.by = hto.classification,x)))))
   objmini <- ScaleData(objmini,assay.type = "HTO")
-  
+
   if (!is.null(singlet.names)){
     levels(objmini@ident) <- c(singlet.names, "Multiplet", "Negative")
-  } 
+  }
   DoHeatmap(objmini,slim.col.label = T,genes.use = singlet_id,assay.type = assay.type,cells.use = cells.ordered,group.label.rot = T)
-  
+
 }

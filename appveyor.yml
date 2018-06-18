@@ -13,8 +13,6 @@ install:
 
 # Adapt as necessary starting from here
 
-image: Previous Visual Studio 2015
-
 environment:
   global:
     R_ARCH: x64
