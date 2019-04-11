@@ -223,15 +223,21 @@ CreateGeneActivityMatrix <- function(
   } else {
     mysapply <- ifelse(test = verbose, yes = pbsapply, no = sapply)
   }
-  newmat <- mysapply(X = 1:length(x = all.features), FUN = function(x){
-    features.use <- annotations[annotations$new_feature == all.features[[x]], ]$feature
-    submat <- peak.matrix[features.use, ]
-    if (length(x = features.use) > 1) {
-      return(Matrix::colSums(x = submat))
-    } else {
-      return(submat)
-    }
-  })
+  newmat <- mysapply(
+    X = 1:length(x = all.features),
+    FUN = function(x, annotations, all.features, peak.matrix){
+      features.use <- annotations[annotations$new_feature == all.features[[x]], ]$feature
+      submat <- peak.matrix[features.use, ]
+      if (length(x = features.use) > 1) {
+        return(Matrix::colSums(x = submat))
+      } else {
+        return(submat)
+      }
+    },
+    annotations = annotations,
+    all.features = all.features,
+    peak.matrix = peak.matrix
+  )
   newmat <- t(x = newmat)
   rownames(x = newmat) <- all.features
   colnames(x = newmat) <- colnames(x = peak.matrix)

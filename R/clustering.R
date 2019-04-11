@@ -59,7 +59,9 @@ FindClusters.default <- function(
   if (PlanThreads() > 1) {
     clustering.results <- future_lapply(
       X = resolution,
-      FUN = function(r) {
+      FUN = function(r, algorithm, object, modularity.fxn, n.start,
+       n.iter, random.seed, verbose, temp.file.location, edge.file.name,
+        initial.membership, weights, node.sizes, resolution) {
         if (algorithm %in% c(1:3)) {
           ids <- RunModularityClustering(
             SNN = object,
@@ -90,7 +92,20 @@ FindClusters.default <- function(
         results <- list(factor(x = ids))
         names(x = results) <- paste0('res.', r)
         return(results)
-      }
+      },
+      algorithm = algorithm,
+      object = object,
+      modularity.fxn = modularity.fxn,
+      n.start = n.start,
+      n.iter = n.iter,
+      random.seed = random.seed,
+      verbose = verbose,
+      temp.file.location = temp.file.location,
+      edge.file.name = edge.file.name,
+      initial.membership = initial.membership,
+      weights = weights,
+      node.sizes = node.sizes,
+      resolution = resolution
     )
     clustering.results <- as.data.frame(x = clustering.results)
   } else {

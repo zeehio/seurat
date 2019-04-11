@@ -915,12 +915,15 @@ DiffExpTest <- function(
   p_val <- unlist(
     x = my.sapply(
       X = 1:nrow(x = data.use),
-      FUN = function(x) {
+      FUN = function(x, data.use, cells.1, cells.2) {
         return(DifferentialLRT(
           x = as.numeric(x = data.use[x, cells.1]),
           y = as.numeric(x = data.use[x, cells.2])
         ))
-      }
+      },
+      data.use = data.use,
+      cells.1 = cells.1,
+      cells.2 = cells.2
     )
   )
   to.return <- data.frame(p_val, row.names = rownames(x = data.use))
@@ -959,9 +962,12 @@ DiffTTest <- function(
   p_val <- unlist(
     x = my.sapply(
       X = 1:nrow(data.use),
-      FUN = function(x) {
-        t.test(x = data.use[x, cells.1], y = data.use[x, cells.2])$p.value
-      }
+      FUN = function(x, data.use, cells.1, cells.2) {
+        stats::t.test(x = data.use[x, cells.1], y = data.use[x, cells.2])$p.value
+      },
+      data.use = data.use,
+      cells.1 = cells.1,
+      cells.2 = cells.2
     )
   )
   to.return <- data.frame(p_val,row.names = rownames(x = data.use))
@@ -1028,7 +1034,7 @@ GLMDETest <- function(
   p_val <- unlist(
     x = my.sapply(
       X = 1:nrow(data.use),
-      FUN = function(x) {
+      FUN = function(x, data.use, min.cells, latent.var.names, test.use) {
         latent.vars[, "GENE"] <- as.numeric(x = data.use[x, ])
         # check that gene is expressed in specified number of cells in one group
         if (sum(latent.vars$GENE[latent.vars$group == "Group1"] > 0) < min.cells &&
@@ -1051,7 +1057,7 @@ GLMDETest <- function(
           ))
           return(2)
         }
-        fmla <- as.formula(object = paste(
+        fmla <- stats::as.formula(object = paste(
           "GENE ~",
           paste(latent.var.names, collapse = "+")
         ))
@@ -1059,19 +1065,23 @@ GLMDETest <- function(
         if (test.use == "negbinom") {
           try(
             expr = p.estimate <- summary(
-              object = glm.nb(formula = fmla, data = latent.vars)
+              object = MASS::glm.nb(formula = fmla, data = latent.vars)
             )$coef[2, 4],
             silent = TRUE
           )
           return(p.estimate)
         } else if (test.use == "poisson") {
-          return(summary(object = glm(
+          return(summary(object = stats::glm(
             formula = fmla,
             data = latent.vars,
             family = "poisson"
           ))$coef[2,4])
         }
-      }
+      },
+      data.use = data.use,
+      min.cells = min.cells,
+      latent.var.names = latent.var.names,
+      test.use = test.use
     )
   )
   features.keep <- rownames(data.use)
@@ -1120,27 +1130,30 @@ LRDETest <- function(
   )
   p_val <- my.sapply(
     X = 1:nrow(x = data.use),
-    FUN = function(x) {
+    FUN = function(x, latent.vars, data.use, group.info) {
       if (is.null(x = latent.vars)) {
         model.data <- cbind(GENE = data.use[x, ], group.info)
         fmla <- as.formula(object = "group ~ GENE")
         fmla2 <- as.formula(object = "group ~ 1")
       } else {
         model.data <- cbind(GENE = data.use[x, ], group.info, latent.vars)
-        fmla <- as.formula(object = paste(
+        fmla <- stats::as.formula(object = paste(
           "group ~ GENE +",
           paste(colnames(x = latent.vars), collapse = "+")
         ))
-        fmla2 <- as.formula(object = paste(
+        fmla2 <- stats::as.formula(object = paste(
           "group ~",
           paste(colnames(x = latent.vars), collapse = "+")
         ))
       }
-      model1 <- glm(formula = fmla, data = model.data, family = "binomial")
-      model2 <- glm(formula = fmla2, data = model.data, family = "binomial")
-      lrtest <- lrtest(model1, model2)
+      model1 <- stats::glm(formula = fmla, data = model.data, family = "binomial")
+      model2 <- stats::glm(formula = fmla2, data = model.data, family = "binomial")
+      lrtest <- lmtest::lrtest(model1, model2)
       return(lrtest$Pr[2])
-    }
+    },
+    latent.vars = latent.vars,
+    data.use = data.use,
+    group.info = group.info,
   )
   to.return <- data.frame(p_val, row.names = rownames(data.use))
   return(to.return)
@@ -1442,9 +1455,12 @@ WilcoxDETest <- function(
   )
   p_val <- my.sapply(
     X = 1:nrow(x = data.use),
-    FUN = function(x) {
-      return(wilcox.test(data.use[x, ] ~ group.info[, "group"], ...)$p.value)
-    }
+    FUN = function(x, data.use, group.info, ...) {
+      return(stats::wilcox.test(data.use[x, ] ~ group.info[, "group"], ...)$p.value)
+    },
+    data.use = data.use,
+    group.info = group.info,
+    ... = ...
   )
   return(data.frame(p_val, row.names = rownames(x = data.use)))
 }

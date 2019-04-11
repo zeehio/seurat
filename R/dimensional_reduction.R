@@ -106,22 +106,26 @@ JackStraw <- function(
         X = 1:num.replicate,
         FUN = function(y) {
           return(fake.vals.raw[[y]][, x])
-        }
+        },
+        fake.vals.raw = fake.vals.raw,
+        x = x
       ))))
-    }
+    },
+    num.replicate = num.replicate,
+    fake.vals.raw = fake.vals.raw
   )
   fake.vals <- as.matrix(x = fake.vals)
   jackStraw.empP <- as.matrix(
     my.sapply(
       X = 1:dims,
-      FUN = function(x) {
+      FUN = function(x, loadings, fake.vals) {
         return(unlist(x = lapply(
           X = abs(loadings[, x]),
           FUN = EmpiricalP,
           nullval = abs(fake.vals[,x])
         )))
       }
-    )
+    ), loadings = loadings, fake.vals = fake.vals
   )
   colnames(x = jackStraw.empP) <- paste0("PC", 1:ncol(x = jackStraw.empP))
   jackstraw.obj <- new(

@@ -737,11 +737,15 @@ MixingMetric <- function(
   groups <- unique(x = group.info)
   mixing <- my.sapply(
     X = 1:ncol(x = object),
-    FUN = function(x) {
+    FUN = function(x, groups, group.info, nn, k) {
       sapply(X = groups, FUN = function(y) {
         which(x = group.info[nn$nn.idx[x, ]] == y)[k]
       })
-    }
+    },
+    groups = groups,
+    group.info = group.info,
+    nn = nn,
+    k = k
   )
   mixing[is.na(x = mixing)] <- max.k
   mixing <- apply(
